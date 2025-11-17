@@ -100,7 +100,8 @@ export function createOrientationListener(
 
 /**
  * Convert device orientation to Three.js Euler angles
- * Critical: When device yaws right (alpha increases), overlay should slide LEFT (negative rotation)
+ * Based on W3C specification: Device uses Z-X'-Y'' intrinsic Tait-Bryan angles
+ * Maps to Three.js 'ZXY' Euler order
  */
 export function deviceOrientationToEuler(orientation: DeviceOrientation): {
   x: number;
@@ -108,25 +109,30 @@ export function deviceOrientationToEuler(orientation: DeviceOrientation): {
   z: number;
 } {
   // Convert degrees to radians
+  // Beta needs -90° adjustment for vertical device hold (screen vertical, not flat)
   const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
-  const beta = orientation.beta !== null ? (orientation.beta * Math.PI) / 180 : 0;
+  const beta = orientation.beta !== null ? ((orientation.beta - 90) * Math.PI) / 180 : 0;
   const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
 
-  // Three.js uses Y-up coordinate system
-  // Device orientation:
-  // - alpha (yaw): rotation around Z-axis, 0-360
-  // - beta (pitch): rotation around X-axis, -180 to 180
-  // - gamma (roll): rotation around Y-axis, -90 to 90
-
-  // For AR alignment:
-  // - When device yaws right (alpha increases), overlay slides LEFT (negative Y rotation)
-  // - Pitch (beta) maps to X rotation
-  // - Roll (gamma) maps to Z rotation
+  // Device orientation (W3C standard):
+  // - alpha (yaw): rotation around Z-axis, 0-360° (opposite of compass heading)
+  // - beta (pitch): rotation around X-axis, -180 to 180°
+  // - gamma (roll): rotation around Y-axis, -90 to 90°
+  //
+  // Three.js coordinate system (right-handed, Y-up):
+  // - X-axis: Right
+  // - Y-axis: Up
+  // - Z-axis: Out of screen (toward camera)
+  //
+  // Both systems are right-handed with Y-up, so mapping is direct:
+  // - Device alpha (Z-axis rotation) → Three.js Z rotation (yaw)
+  // - Device beta (X-axis rotation) → Three.js X rotation (pitch, with -90° adjustment)
+  // - Device gamma (Y-axis rotation) → Three.js Y rotation (roll)
 
   return {
-    x: beta, // Pitch
-    y: -alpha, // Yaw (negated so right yaw = left slide)
-    z: gamma, // Roll
+    x: beta,   // X rotation (pitch) - with -90° adjustment for vertical hold
+    y: gamma,  // Y rotation (roll) - gamma rotates around Y-axis
+    z: alpha,  // Z rotation (yaw) - alpha rotates around Z-axis
   };
 }
 

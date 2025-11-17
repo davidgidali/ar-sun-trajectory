@@ -40,6 +40,7 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       alpha: true,
       antialias: true,
     });
+    renderer.setClearColor(0x000000, 0); // Black, fully transparent background
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     rendererRef.current = renderer;
@@ -118,7 +119,8 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       // Update camera rotation based on device orientation
       if (orientation && camera) {
         const euler = deviceOrientationToEuler(orientation);
-        camera.rotation.set(euler.x, euler.y, euler.z, 'YXZ');
+        camera.rotation.order = 'ZXY'; // Match W3C Z-X'-Y'' intrinsic Tait-Bryan angles
+        camera.rotation.set(euler.x, euler.y, euler.z, 'ZXY');
       }
 
       renderer.render(scene, camera);
@@ -157,7 +159,8 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     if (!cameraRef.current || !orientation) return;
 
     const euler = deviceOrientationToEuler(orientation);
-    cameraRef.current.rotation.set(euler.x, euler.y, euler.z, 'YXZ');
+    cameraRef.current.rotation.order = 'ZXY'; // Match W3C Z-X'-Y'' intrinsic Tait-Bryan angles
+    cameraRef.current.rotation.set(euler.x, euler.y, euler.z, 'ZXY');
   }, [orientation]);
 
   return (
