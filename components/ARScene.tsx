@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import type { DeviceOrientation } from '@/lib/orientation';
-import { deviceOrientationToEuler } from '@/lib/orientation';
+import { setObjectQuaternion, getScreenOrientation } from '@/lib/orientation';
 import type { SunTrajectory } from '@/lib/sunTrajectory';
 import { sunPositionTo3D } from '@/lib/sunTrajectory';
 
@@ -28,6 +28,7 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
 
     // Initialize Three.js scene
     const scene = new THREE.Scene();
+    scene.background = null; // Ensure transparent background
     sceneRef.current = scene;
 
     // Camera with wide FOV to match device camera
@@ -116,11 +117,16 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     const animate = () => {
       requestAnimationFrame(animate);
 
-      // Update camera rotation based on device orientation
+      // Update camera rotation based on device orientation using quaternions
       if (orientation && camera) {
-        const euler = deviceOrientationToEuler(orientation);
-        camera.rotation.order = 'ZXY'; // Match W3C Z-X'-Y'' intrinsic Tait-Bryan angles
-        camera.rotation.set(euler.x, euler.y, euler.z, 'ZXY');
+        // Convert degrees to radians
+        const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
+        const beta = orientation.beta !== null ? (orientation.beta * Math.PI) / 180 : 0;
+        const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
+        const orient = (getScreenOrientation() * Math.PI) / 180;
+
+        // Use quaternion-based rotation (official Three.js pattern)
+        setObjectQuaternion(camera.quaternion, alpha, beta, gamma, orient, THREE);
       }
 
       renderer.render(scene, camera);
@@ -158,16 +164,21 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
   useEffect(() => {
     if (!cameraRef.current || !orientation) return;
 
-    const euler = deviceOrientationToEuler(orientation);
-    cameraRef.current.rotation.order = 'ZXY'; // Match W3C Z-X'-Y'' intrinsic Tait-Bryan angles
-    cameraRef.current.rotation.set(euler.x, euler.y, euler.z, 'ZXY');
+    // Convert degrees to radians
+    const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
+    const beta = orientation.beta !== null ? (orientation.beta * Math.PI) / 180 : 0;
+    const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
+    const orient = (getScreenOrientation() * Math.PI) / 180;
+
+    // Use quaternion-based rotation (official Three.js pattern)
+    setObjectQuaternion(cameraRef.current.quaternion, alpha, beta, gamma, orient, THREE);
   }, [orientation]);
 
   return (
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 10 }}
+      style={{ zIndex: 10, background: 'transparent' }}
     />
   );
 }

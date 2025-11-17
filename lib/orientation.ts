@@ -99,40 +99,63 @@ export function createOrientationListener(
 }
 
 /**
- * Convert device orientation to Three.js Euler angles
- * Based on W3C specification: Device uses Z-X'-Y'' intrinsic Tait-Bryan angles
- * Maps to Three.js 'ZXY' Euler order
+ * Get screen orientation angle in degrees
+ * Handles both window.orientation (legacy) and screen.orientation (modern)
+ * Returns degrees (will be converted to radians in calling code)
  */
-export function deviceOrientationToEuler(orientation: DeviceOrientation): {
-  x: number;
-  y: number;
-  z: number;
-} {
-  // Convert degrees to radians
-  // Beta needs -90° adjustment for vertical device hold (screen vertical, not flat)
-  const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
-  const beta = orientation.beta !== null ? ((orientation.beta - 90) * Math.PI) / 180 : 0;
-  const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
+export function getScreenOrientation(): number {
+  if (typeof window !== 'undefined') {
+    // Modern API
+    if (screen.orientation && screen.orientation.angle !== undefined) {
+      return screen.orientation.angle;
+    }
+    // Legacy API
+    if (window.orientation !== undefined) {
+      return window.orientation;
+    }
+  }
+  return 0;
+}
 
-  // Device orientation (W3C standard):
-  // - alpha (yaw): rotation around Z-axis, 0-360° (opposite of compass heading)
-  // - beta (pitch): rotation around X-axis, -180 to 180°
-  // - gamma (roll): rotation around Y-axis, -90 to 90°
-  //
-  // Three.js coordinate system (right-handed, Y-up):
-  // - X-axis: Right
-  // - Y-axis: Up
-  // - Z-axis: Out of screen (toward camera)
-  //
-  // Both systems are right-handed with Y-up, so mapping is direct:
-  // - Device alpha (Z-axis rotation) → Three.js Z rotation (yaw)
-  // - Device beta (X-axis rotation) → Three.js X rotation (pitch, with -90° adjustment)
-  // - Device gamma (Y-axis rotation) → Three.js Y rotation (roll)
+/**
+ * Set object quaternion from device orientation
+ * Based on official Three.js DeviceOrientationControls implementation
+ * Uses quaternion-based rotation with proper angle mapping and adjustments
+ * 
+ * @param quaternion - Three.js Quaternion object to modify
+ * @param alpha - Device yaw angle in radians (0-2π)
+ * @param beta - Device pitch angle in radians (-π to π)
+ * @param gamma - Device roll angle in radians (-π/2 to π/2)
+ * @param orient - Screen orientation angle in radians
+ * @param THREE - Three.js library (passed from component to avoid import issues)
+ */
+export function setObjectQuaternion(
+  quaternion: any, // THREE.Quaternion
+  alpha: number,
+  beta: number,
+  gamma: number,
+  orient: number,
+  THREE: any
+): void {
+  // Create reusable objects (following Three.js pattern)
+  const zee = new THREE.Vector3(0, 0, 1);
+  const euler = new THREE.Euler();
+  const q0 = new THREE.Quaternion();
+  // -90° rotation around X-axis (replaces beta - 90° adjustment)
+  const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
 
-  return {
-    x: beta,   // X rotation (pitch) - with -90° adjustment for vertical hold
-    y: gamma,  // Y rotation (roll) - gamma rotates around Y-axis
-    z: alpha,  // Z rotation (yaw) - alpha rotates around Z-axis
-  };
+  // Official Three.js pattern:
+  // Map: beta→X, alpha→Y, -gamma→Z (note: gamma is negated)
+  // Use 'YXZ' Euler order (NOT 'ZXY')
+  euler.set(beta, alpha, -gamma, 'YXZ');
+
+  // Convert Euler to quaternion
+  quaternion.setFromEuler(euler);
+
+  // Apply -90° X-axis rotation (handles vertical device hold)
+  quaternion.multiply(q1);
+
+  // Adjust for screen orientation (portrait/landscape)
+  quaternion.multiply(q0.setFromAxisAngle(zee, -orient));
 }
 
