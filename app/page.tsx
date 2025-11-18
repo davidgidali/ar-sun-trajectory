@@ -131,7 +131,7 @@ export default function Home() {
         }}
       />
 
-      {/* AR Overlay */}
+      {/* AR Overlay 
       {dimensions.width > 0 && dimensions.height > 0 && (
         <ARScene
           orientation={orientation}
@@ -139,7 +139,7 @@ export default function Home() {
           width={dimensions.width}
           height={dimensions.height}
         />
-      )}
+      )}*/}
 
       {/* Location Input Modal */}
       {showLocationInput && (
