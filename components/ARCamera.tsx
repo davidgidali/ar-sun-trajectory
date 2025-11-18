@@ -56,7 +56,7 @@ export default function ARCamera({ onStreamReady, onError }: ARCameraProps) {
         streamRef.current = null;
       }
     };
-  }, [onStreamReady, onError]);
+  }, []); // Empty deps - callbacks are stable or use refs
 
   if (error) {
     return (
