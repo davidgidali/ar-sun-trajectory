@@ -120,7 +120,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-black">
+    <main className="relative w-screen h-screen overflow-hidden">
       {/* Camera View */}
       <ARCamera
         onStreamReady={() => {

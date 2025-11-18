@@ -40,10 +40,15 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       canvas: canvasRef.current,
       alpha: true,
       antialias: true,
+      premultipliedAlpha: false, // Ensure proper alpha blending
     });
     renderer.setClearColor(0x000000, 0); // Black, fully transparent background
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
+    // Ensure canvas element itself has transparent background
+    if (canvasRef.current) {
+      canvasRef.current.style.backgroundColor = 'transparent';
+    }
     rendererRef.current = renderer;
 
     // Create sun trajectory arc
@@ -178,7 +183,11 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 10, background: 'transparent' }}
+      style={{ 
+        zIndex: 10, 
+        background: 'transparent',
+        backgroundColor: 'transparent',
+      }}
     />
   );
 }
