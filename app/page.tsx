@@ -134,8 +134,9 @@ export default function Home() {
 
     recalibrationTimerRef.current = setInterval(() => {
       // Recalibrate by updating initial alpha with current alpha
-      if (orientationRef.current?.alpha !== null) {
-        setInitialAlpha(orientationRef.current.alpha);
+      const current = orientationRef.current;
+      if (current && current.alpha !== null) {
+        setInitialAlpha(current.alpha);
       }
     }, 45000); // 45 seconds
 
@@ -148,7 +149,7 @@ export default function Home() {
 
   // Manual recalibration function
   const handleRecalibrate = () => {
-    if (orientation?.alpha !== null) {
+    if (orientation && orientation.alpha !== null) {
       setInitialAlpha(orientation.alpha);
     }
   };

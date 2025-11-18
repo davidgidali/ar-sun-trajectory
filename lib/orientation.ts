@@ -86,10 +86,11 @@ export function createOrientationListener(
 
     // Prefer deviceorientationabsolute for compass-aligned data
     // Fallback to deviceorientation if absolute is not available
+    const win = window as any;
     if ('ondeviceorientationabsolute' in window) {
-      window.addEventListener('deviceorientationabsolute', orientationHandler as EventListener);
+      win.addEventListener('deviceorientationabsolute', orientationHandler);
     } else {
-      window.addEventListener('deviceorientation', orientationHandler);
+      win.addEventListener('deviceorientation', orientationHandler);
     }
     isListening = true;
   };
@@ -97,8 +98,9 @@ export function createOrientationListener(
   const stop = () => {
     if (!isListening || !orientationHandler) return;
     // Remove both event types to be safe
-    window.removeEventListener('deviceorientationabsolute', orientationHandler as EventListener);
-    window.removeEventListener('deviceorientation', orientationHandler);
+    const win = window as any;
+    win.removeEventListener('deviceorientationabsolute', orientationHandler);
+    win.removeEventListener('deviceorientation', orientationHandler);
     orientationHandler = null;
     isListening = false;
   };
