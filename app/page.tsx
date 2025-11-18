@@ -131,7 +131,7 @@ export default function Home() {
         }}
       />
 
-      {/* AR Overlay 
+      {/* AR Overlay */}
       {dimensions.width > 0 && dimensions.height > 0 && (
         <ARScene
           orientation={orientation}
@@ -139,7 +139,7 @@ export default function Home() {
           width={dimensions.width}
           height={dimensions.height}
         />
-      )}*/}
+      )}
 
       {/* Location Input Modal */}
       {showLocationInput && (
@@ -157,6 +157,33 @@ export default function Home() {
           onDeny={handleMotionPermissionDeny}
         />
       )}
+
+      {/* Deployment Stats Overlay */}
+      <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-2 rounded-lg text-xs z-30 font-mono">
+        <div className="space-y-1">
+          <p className="font-semibold">v0.1.0</p>
+          <p className="text-gray-300">
+            {process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? 'Prod' : 
+             process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ? 'Preview' : 'Dev'}
+          </p>
+          {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA && (
+            <p className="text-gray-400 text-[10px]">
+              {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA.substring(0, 7)}
+            </p>
+          )}
+          {process.env.NEXT_PUBLIC_VERCEL_URL && (
+            <p className="text-gray-400 text-[10px] truncate max-w-[120px]">
+              {(() => {
+                try {
+                  return new URL(process.env.NEXT_PUBLIC_VERCEL_URL || '').hostname;
+                } catch {
+                  return process.env.NEXT_PUBLIC_VERCEL_URL;
+                }
+              })()}
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Info Overlay */}
       {location && trajectory && (
