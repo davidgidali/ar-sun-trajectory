@@ -13,9 +13,10 @@ interface ARCameraViewProps {
   trajectory: SunTrajectory | null;
   width: number;
   height: number;
+  fov?: number;
 }
 
-export default function ARCameraView({ orientation, trajectory, width, height }: ARCameraViewProps) {
+export default function ARCameraView({ orientation, trajectory, width, height, fov }: ARCameraViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -35,7 +36,7 @@ export default function ARCameraView({ orientation, trajectory, width, height }:
     scene.background = null; // Transparent background to show camera feed
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(fov ?? 75, width / height, 0.1, 1000);
     camera.position.set(0, 1.78, 0); // Human eye level: 5'10" ≈ 1.78 meters above ground
     cameraRef.current = camera;
 
@@ -118,7 +119,7 @@ export default function ARCameraView({ orientation, trajectory, width, height }:
       cameraRef.current = null;
       rendererRef.current = null;
     };
-  }, [height, trajectory, width]);
+  }, [height, trajectory, width, fov]);
 
   useEffect(() => {
     if (!sceneRef.current || !trajectory) return;

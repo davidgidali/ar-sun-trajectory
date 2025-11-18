@@ -13,6 +13,7 @@ import {
   type DeviceOrientation,
   isDeviceOrientationSupported,
 } from '@/lib/orientation';
+import { useCameraFOV } from '@/lib/useCameraFOV';
 
 export default function Home() {
   const [location, setLocation] = useState<Location | null>(null);
@@ -26,6 +27,7 @@ export default function Home() {
   const orientationListenerRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(
     null
   );
+  const { fov } = useCameraFOV();
 
   // Get screen dimensions
   useEffect(() => {
@@ -160,6 +162,7 @@ export default function Home() {
           trajectory={trajectory}
           width={dimensions.width}
           height={dimensions.height}
+          fov={fov}
         />
       )}
 

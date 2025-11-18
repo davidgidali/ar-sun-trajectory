@@ -45,6 +45,7 @@ interface ThirdPersonViewProps {
   onOrientationChange?: (orientation: DeviceOrientation) => void;
   width: number;
   height: number;
+  fov?: number;
 }
 
 export default function ThirdPersonView({
@@ -53,6 +54,7 @@ export default function ThirdPersonView({
   onOrientationChange,
   width,
   height,
+  fov,
 }: ThirdPersonViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -195,7 +197,7 @@ export default function ThirdPersonView({
 
       // Device camera (for FOV visualization) - at scene root, quaternion set directly
       // Positioned at human eye level (5'10" ≈ 1.78m), back of where device would be
-      const deviceCamera = new THREE.PerspectiveCamera(75, 9 / 16, 0.1, 50);
+      const deviceCamera = new THREE.PerspectiveCamera(fov ?? 75, 9 / 16, 0.1, 50);
       deviceCamera.position.set(0, 1.78, -0.05);
       deviceCameraRef.current = deviceCamera;
       scene.add(deviceCamera); // Add to scene root, not deviceGroup
@@ -258,7 +260,7 @@ export default function ThirdPersonView({
       axisLabelTexturesRef.current = [];
       setSceneReady(false);
     };
-  }, [width, height]);
+  }, [width, height, fov]);
 
   // Update device orientation - consolidated single effect
   useEffect(() => {

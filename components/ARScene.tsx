@@ -12,9 +12,10 @@ interface ARSceneProps {
   trajectory: SunTrajectory | null;
   width: number;
   height: number;
+  fov?: number;
 }
 
-export default function ARScene({ orientation, trajectory, width, height }: ARSceneProps) {
+export default function ARScene({ orientation, trajectory, width, height, fov }: ARSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -34,8 +35,8 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     scene.background = null; // Ensure transparent background
     sceneRef.current = scene;
 
-    // Camera with wide FOV to match device camera
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    // Camera with FOV to match device camera
+    const camera = new THREE.PerspectiveCamera(fov ?? 75, width / height, 0.1, 1000);
     camera.position.set(0, 1.78, 0); // Human eye level: 5'10" ≈ 1.78 meters above ground
     cameraRef.current = camera;
 
@@ -158,7 +159,7 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
         });
       }
     };
-  }, [width, height, trajectory]);
+  }, [width, height, trajectory, orientation, fov]);
 
   // Update camera rotation when orientation changes
   useEffect(() => {
