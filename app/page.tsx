@@ -5,6 +5,7 @@ import ARCamera from '@/components/ARCamera';
 import ARScene from '@/components/ARScene';
 import LocationInput from '@/components/LocationInput';
 import PermissionModal from '@/components/PermissionModal';
+import DeploymentInfo from '@/components/DeploymentInfo';
 import { getLocation, saveLocation, type Location } from '@/lib/location';
 import { calculateSunTrajectory, type SunTrajectory } from '@/lib/sunTrajectory';
 import {
@@ -231,6 +232,9 @@ export default function Home() {
           Recalibrate
         </button>
       )}
+
+      {/* Deployment Info Overlay */}
+      <DeploymentInfo />
     </main>
   );
 }
