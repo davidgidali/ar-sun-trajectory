@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import ARCamera from '@/components/ARCamera';
 import ARScene from '@/components/ARScene';
@@ -21,6 +22,7 @@ export default function Home() {
   const [showMotionPermission, setShowMotionPermission] = useState(false);
   const [motionPermissionGranted, setMotionPermissionGranted] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [showEditorLink, setShowEditorLink] = useState(false);
   const orientationListenerRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(
     null
   );
@@ -63,8 +65,10 @@ export default function Home() {
 
   // Setup device orientation listener
   useEffect(() => {
-    if (!isDeviceOrientationSupported()) {
+    const supported = isDeviceOrientationSupported();
+    if (!supported) {
       console.warn('Device orientation not supported');
+      setShowEditorLink(true);
       return;
     }
 
@@ -100,6 +104,14 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 1;
+    if (!isTouchDevice || process.env.NODE_ENV !== 'production') {
+      setShowEditorLink(true);
+    }
+  }, []);
+
   const handleLocationSet = (loc: Location) => {
     saveLocation(loc);
     setLocation(loc);
@@ -121,6 +133,16 @@ export default function Home() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden">
+      {showEditorLink && (
+        <div className="absolute top-4 left-4 z-30">
+          <Link
+            href="/editor"
+            className="rounded-md border border-white/30 bg-black/60 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-white/10"
+          >
+            Open Editor
+          </Link>
+        </div>
+      )}
       {/* Camera View */}
       <ARCamera
         onStreamReady={() => {

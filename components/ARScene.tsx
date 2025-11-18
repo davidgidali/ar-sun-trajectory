@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import type { DeviceOrientation } from '@/lib/orientation';
 import { setObjectQuaternion, getScreenOrientation } from '@/lib/orientation';
 import type { SunTrajectory } from '@/lib/sunTrajectory';
-import { sunPositionTo3D } from '@/lib/sunTrajectory';
+import { createARContent } from '@/lib/createARContent';
 
 interface ARSceneProps {
   orientation: DeviceOrientation | null;
@@ -19,9 +19,12 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const arcLineRef = useRef<THREE.Line | null>(null);
+  const aboveHorizonArcRef = useRef<THREE.Line | null>(null);
+  const belowHorizonArcRef = useRef<THREE.Line | null>(null);
   const markersRef = useRef<THREE.Group | null>(null);
   const currentIndicatorRef = useRef<THREE.Mesh | null>(null);
+  const horizonPlaneRef = useRef<THREE.Mesh | null>(null);
+  const compassRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -33,6 +36,7 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
 
     // Camera with wide FOV to match device camera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.set(0, 1.78, 0); // Human eye level: 5'10" ≈ 1.78 meters above ground
     cameraRef.current = camera;
 
     // Renderer
@@ -51,11 +55,12 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     }
     rendererRef.current = renderer;
 
-    // Create sun trajectory arc
-    const createArc = (trajectory: SunTrajectory) => {
-      // Remove old arc if exists
-      if (arcLineRef.current) {
-        scene.remove(arcLineRef.current);
+    const buildContent = (traj: SunTrajectory) => {
+      if (aboveHorizonArcRef.current) {
+        scene.remove(aboveHorizonArcRef.current);
+      }
+      if (belowHorizonArcRef.current) {
+        scene.remove(belowHorizonArcRef.current);
       }
       if (markersRef.current) {
         scene.remove(markersRef.current);
@@ -63,59 +68,29 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       if (currentIndicatorRef.current) {
         scene.remove(currentIndicatorRef.current);
       }
-
-      // Create points for the arc
-      const points: THREE.Vector3[] = [];
-      const markerGroup = new THREE.Group();
-      markersRef.current = markerGroup;
-
-      trajectory.positions.forEach((position, index) => {
-        const pos3D = sunPositionTo3D(position);
-        const point = new THREE.Vector3(pos3D.x * 10, pos3D.y * 10, pos3D.z * 10); // Scale for visibility
-        points.push(point);
-
-        // Add hourly marker (sphere)
-        if (index > 0 && index < trajectory.positions.length - 1) {
-          const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-          const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-          const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-          marker.position.copy(point);
-          markerGroup.add(marker);
-        }
-      });
-
-      // Create line for the arc
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const material = new THREE.LineBasicMaterial({
-        color: 0xffaa00,
-        linewidth: 3,
-      });
-      const arcLine = new THREE.Line(geometry, material);
-      arcLineRef.current = arcLine;
-      scene.add(arcLine);
-      scene.add(markerGroup);
-
-      // Add current sun position indicator
-      if (trajectory.currentPosition) {
-        const currentPos3D = sunPositionTo3D(trajectory.currentPosition);
-        const currentPoint = new THREE.Vector3(
-          currentPos3D.x * 10,
-          currentPos3D.y * 10,
-          currentPos3D.z * 10
-        );
-
-        const indicatorGeometry = new THREE.SphereGeometry(0.2, 16, 16);
-        const indicatorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
-        indicator.position.copy(currentPoint);
-        currentIndicatorRef.current = indicator;
-        scene.add(indicator);
+      if (horizonPlaneRef.current) {
+        scene.remove(horizonPlaneRef.current);
       }
+      if (compassRef.current) {
+        scene.remove(compassRef.current);
+        compassRef.current.traverse((child) => {
+          if (child instanceof THREE.Sprite && child.material) {
+            child.material.dispose();
+          }
+        });
+      }
+
+      const { aboveHorizonArc, belowHorizonArc, markers, currentIndicator, horizonPlane, compass } = createARContent(scene, traj, THREE);
+      aboveHorizonArcRef.current = aboveHorizonArc;
+      belowHorizonArcRef.current = belowHorizonArc;
+      markersRef.current = markers;
+      currentIndicatorRef.current = currentIndicator;
+      horizonPlaneRef.current = horizonPlane;
+      compassRef.current = compass;
     };
 
-    // Initial render
     if (trajectory) {
-      createArc(trajectory);
+      buildContent(trajectory);
     }
 
     // Animation loop
@@ -144,9 +119,13 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       if (renderer) {
         renderer.dispose();
       }
-      if (arcLineRef.current) {
-        arcLineRef.current.geometry.dispose();
-        (arcLineRef.current.material as THREE.Material).dispose();
+      if (aboveHorizonArcRef.current) {
+        aboveHorizonArcRef.current.geometry.dispose();
+        (aboveHorizonArcRef.current.material as THREE.Material).dispose();
+      }
+      if (belowHorizonArcRef.current) {
+        belowHorizonArcRef.current.geometry.dispose();
+        (belowHorizonArcRef.current.material as THREE.Material).dispose();
       }
       if (markersRef.current) {
         markersRef.current.traverse((child) => {
@@ -161,6 +140,22 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       if (currentIndicatorRef.current) {
         currentIndicatorRef.current.geometry.dispose();
         (currentIndicatorRef.current.material as THREE.Material).dispose();
+      }
+      if (horizonPlaneRef.current) {
+        horizonPlaneRef.current.geometry.dispose();
+        (horizonPlaneRef.current.material as THREE.Material).dispose();
+      }
+      if (compassRef.current) {
+        compassRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh || child instanceof THREE.Sprite) {
+            child.geometry?.dispose();
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat) => mat.dispose());
+            } else if (child.material) {
+              child.material.dispose();
+            }
+          }
+        });
       }
     };
   }, [width, height, trajectory]);

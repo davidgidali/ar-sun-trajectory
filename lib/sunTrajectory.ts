@@ -26,24 +26,13 @@ export function calculateSunTrajectory(location: Location, date: Date = new Date
   const sunrise = times.sunrise;
   const sunset = times.sunset;
 
-  // Calculate hourly positions from sunrise to sunset
+  // Calculate hourly positions for full 24-hour cycle (360° arc)
   const positions: SunPosition[] = [];
-  const startHour = sunrise.getHours();
-  const endHour = sunset.getHours();
-  const startMinute = sunrise.getMinutes();
 
-  // Add sunrise position
-  positions.push({
-    azimuth: SunCalc.getPosition(sunrise, latitude, longitude).azimuth * (180 / Math.PI) + 180,
-    altitude: SunCalc.getPosition(sunrise, latitude, longitude).altitude * (180 / Math.PI),
-    time: sunrise,
-  });
-
-  // Add hourly positions
-  for (let hour = startHour + 1; hour <= endHour; hour++) {
+  // Generate position for each hour (0-23)
+  for (let hour = 0; hour < 24; hour++) {
     const time = new Date(date);
     time.setHours(hour, 0, 0, 0);
-    if (time > sunset) break;
 
     const position = SunCalc.getPosition(time, latitude, longitude);
     positions.push({
@@ -52,13 +41,6 @@ export function calculateSunTrajectory(location: Location, date: Date = new Date
       time,
     });
   }
-
-  // Add sunset position
-  positions.push({
-    azimuth: SunCalc.getPosition(sunset, latitude, longitude).azimuth * (180 / Math.PI) + 180,
-    altitude: SunCalc.getPosition(sunset, latitude, longitude).altitude * (180 / Math.PI),
-    time: sunset,
-  });
 
   // Calculate current position
   const now = new Date();
