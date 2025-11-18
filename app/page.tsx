@@ -27,7 +27,7 @@ export default function Home() {
   const orientationListenerRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(
     null
   );
-  const { fov } = useCameraFOV();
+  const { fov, deviceInfo, isLoading: fovLoading } = useCameraFOV();
 
   // Get screen dimensions
   useEffect(() => {
@@ -145,6 +145,15 @@ export default function Home() {
           </Link>
         </div>
       )}
+
+      {/* Debug Overlay - FOV Detection Info */}
+      <div className="absolute top-4 right-4 z-30 rounded-md border border-white/30 bg-black/80 px-3 py-2 text-xs text-white backdrop-blur">
+        <div className="font-semibold mb-1">Camera FOV Debug</div>
+        <div className="space-y-0.5 text-white/80">
+          <div>Device: {fovLoading ? 'Detecting...' : deviceInfo}</div>
+          <div>FOV: {fov.toFixed(1)}°</div>
+        </div>
+      </div>
       {/* Camera View */}
       <ARCamera
         onStreamReady={() => {

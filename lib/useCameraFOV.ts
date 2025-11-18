@@ -35,8 +35,9 @@ const DEFAULT_FOV = 75;
 
 /**
  * Detect device camera FOV using multiple fallback strategies
+ * Returns FOV and device info
  */
-function detectCameraFOV(): Promise<number> {
+function detectCameraFOV(): Promise<{ fov: number; device: string }> {
   return new Promise((resolve) => {
     // Strategy 1: Try to get FOV from MediaStreamTrack settings
     navigator.mediaDevices
@@ -52,7 +53,7 @@ function detectCameraFOV(): Promise<number> {
             const fov = settings.fov;
             // Cache it
             localStorage.setItem(FOV_STORAGE_KEY, fov.toString());
-            resolve(fov);
+            resolve({ fov, device: 'Detected from camera settings' });
             return;
           }
           
@@ -61,12 +62,12 @@ function detectCameraFOV(): Promise<number> {
         
         // Strategy 2: Device detection via User-Agent
         const userAgent = navigator.userAgent.toLowerCase();
-        const detectedFOV = detectFOVFromUserAgent(userAgent);
+        const detected = detectFOVFromUserAgent(userAgent);
         
-        if (detectedFOV !== DEFAULT_FOV) {
+        if (detected.fov !== DEFAULT_FOV) {
           // Cache detected FOV
-          localStorage.setItem(FOV_STORAGE_KEY, detectedFOV.toString());
-          resolve(detectedFOV);
+          localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
+          resolve(detected);
           return;
         }
         
@@ -75,22 +76,22 @@ function detectCameraFOV(): Promise<number> {
         if (cachedFOV) {
           const fov = parseFloat(cachedFOV);
           if (!isNaN(fov) && fov > 0 && fov < 180) {
-            resolve(fov);
+            resolve({ fov, device: 'Cached value' });
             return;
           }
         }
         
         // Strategy 4: Default fallback
-        resolve(DEFAULT_FOV);
+        resolve({ fov: DEFAULT_FOV, device: 'Default (75°)' });
       })
       .catch(() => {
         // If camera access fails, try device detection and localStorage
         const userAgent = navigator.userAgent.toLowerCase();
-        const detectedFOV = detectFOVFromUserAgent(userAgent);
+        const detected = detectFOVFromUserAgent(userAgent);
         
-        if (detectedFOV !== DEFAULT_FOV) {
-          localStorage.setItem(FOV_STORAGE_KEY, detectedFOV.toString());
-          resolve(detectedFOV);
+        if (detected.fov !== DEFAULT_FOV) {
+          localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
+          resolve(detected);
           return;
         }
         
@@ -98,37 +99,39 @@ function detectCameraFOV(): Promise<number> {
         if (cachedFOV) {
           const fov = parseFloat(cachedFOV);
           if (!isNaN(fov) && fov > 0 && fov < 180) {
-            resolve(fov);
+            resolve({ fov, device: 'Cached value' });
             return;
           }
         }
         
-        resolve(DEFAULT_FOV);
+        resolve({ fov: DEFAULT_FOV, device: 'Default (75°)' });
       });
   });
 }
 
 /**
  * Detect FOV from User-Agent string
+ * Returns FOV and device name
  */
-function detectFOVFromUserAgent(userAgent: string): number {
+function detectFOVFromUserAgent(userAgent: string): { fov: number; device: string } {
   // Check for iPhone models
   for (const [device, fov] of Object.entries(DEVICE_FOV_MAP)) {
     if (userAgent.includes(device)) {
-      return fov;
+      return { fov, device: device.replace('iphone ', 'iPhone ').replace(/\b\w/g, l => l.toUpperCase()) };
     }
   }
   
-  return DEFAULT_FOV;
+  return { fov: DEFAULT_FOV, device: 'Unknown' };
 }
 
 /**
  * React hook to detect and cache device camera FOV
- * Returns the detected FOV and loading state
+ * Returns the detected FOV, device info, and loading state
  */
 export function useCameraFOV() {
   const [fov, setFov] = useState<number>(DEFAULT_FOV);
   const [isLoading, setIsLoading] = useState(true);
+  const [deviceInfo, setDeviceInfo] = useState<string>('Unknown');
 
   useEffect(() => {
     let cancelled = false;
@@ -146,9 +149,10 @@ export function useCameraFOV() {
 
     // Detect FOV (may take a moment if camera permission needed)
     detectCameraFOV()
-      .then((detectedFOV) => {
+      .then((result) => {
         if (!cancelled) {
-          setFov(detectedFOV);
+          setFov(result.fov);
+          setDeviceInfo(result.device);
           setIsLoading(false);
         }
       })
@@ -163,6 +167,6 @@ export function useCameraFOV() {
     };
   }, []);
 
-  return { fov, isLoading };
+  return { fov, isLoading, deviceInfo };
 }
 
