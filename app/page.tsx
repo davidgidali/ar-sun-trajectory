@@ -5,7 +5,6 @@ import ARCamera from '@/components/ARCamera';
 import ARScene from '@/components/ARScene';
 import LocationInput from '@/components/LocationInput';
 import PermissionModal from '@/components/PermissionModal';
-import DeploymentInfo from '@/components/DeploymentInfo';
 import { getLocation, saveLocation, type Location } from '@/lib/location';
 import { calculateSunTrajectory, type SunTrajectory } from '@/lib/sunTrajectory';
 import {
@@ -18,7 +17,6 @@ export default function Home() {
   const [location, setLocation] = useState<Location | null>(null);
   const [trajectory, setTrajectory] = useState<SunTrajectory | null>(null);
   const [orientation, setOrientation] = useState<DeviceOrientation | null>(null);
-  const [initialAlpha, setInitialAlpha] = useState<number | null>(null);
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showMotionPermission, setShowMotionPermission] = useState(false);
   const [motionPermissionGranted, setMotionPermissionGranted] = useState(false);
@@ -26,8 +24,6 @@ export default function Home() {
   const orientationListenerRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(
     null
   );
-  const recalibrationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const orientationRef = useRef<DeviceOrientation | null>(null);
 
   // Get screen dimensions
   useEffect(() => {
@@ -74,12 +70,7 @@ export default function Home() {
 
     const listener = createOrientationListener(
       (orient) => {
-        orientationRef.current = orient;
         setOrientation(orient);
-        // Capture initial alpha on first orientation event
-        if (initialAlpha === null && orient.alpha !== null) {
-          setInitialAlpha(orient.alpha);
-        }
       },
       (error) => {
         console.error('Orientation error:', error);
@@ -128,32 +119,6 @@ export default function Home() {
     // Continue without motion tracking
   };
 
-  // Periodic recalibration (every 45 seconds to account for compass drift)
-  useEffect(() => {
-    if (!motionPermissionGranted) return;
-
-    recalibrationTimerRef.current = setInterval(() => {
-      // Recalibrate by updating initial alpha with current alpha
-      const current = orientationRef.current;
-      if (current && current.alpha !== null) {
-        setInitialAlpha(current.alpha);
-      }
-    }, 45000); // 45 seconds
-
-    return () => {
-      if (recalibrationTimerRef.current) {
-        clearInterval(recalibrationTimerRef.current);
-      }
-    };
-  }, [motionPermissionGranted]);
-
-  // Manual recalibration function
-  const handleRecalibrate = () => {
-    if (orientation && orientation.alpha !== null) {
-      setInitialAlpha(orientation.alpha);
-    }
-  };
-
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-black">
       {/* Camera View */}
@@ -171,8 +136,6 @@ export default function Home() {
         <ARScene
           orientation={orientation}
           trajectory={trajectory}
-          initialAlpha={initialAlpha}
-          onRecalibrate={handleRecalibrate}
           width={dimensions.width}
           height={dimensions.height}
         />
@@ -222,20 +185,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* Recalibration Button */}
-      {motionPermissionGranted && (
-        <button
-          onClick={handleRecalibrate}
-          className="absolute top-4 right-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold z-30 shadow-lg"
-          title="Recalibrate compass alignment"
-        >
-          Recalibrate
-        </button>
-      )}
-
-      {/* Deployment Info Overlay */}
-      <DeploymentInfo />
     </main>
   );
 }
