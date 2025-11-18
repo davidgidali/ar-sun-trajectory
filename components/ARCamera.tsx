@@ -87,7 +87,7 @@ export default function ARCamera({ onStreamReady, onError }: ARCameraProps) {
       playsInline
       muted
       className="absolute inset-0 w-full h-full object-cover"
-      style={{ transform: 'scaleX(-1)' }} // Mirror the video for better UX
+      style={{ zIndex: 0 }}
     />
   );
 }

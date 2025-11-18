@@ -10,11 +10,20 @@ import { sunPositionTo3D } from '@/lib/sunTrajectory';
 interface ARSceneProps {
   orientation: DeviceOrientation | null;
   trajectory: SunTrajectory | null;
+  initialAlpha: number | null;
+  onRecalibrate?: () => void;
   width: number;
   height: number;
 }
 
-export default function ARScene({ orientation, trajectory, width, height }: ARSceneProps) {
+export default function ARScene({
+  orientation,
+  trajectory,
+  initialAlpha,
+  onRecalibrate,
+  width,
+  height,
+}: ARSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -22,6 +31,9 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
   const arcLineRef = useRef<THREE.Line | null>(null);
   const markersRef = useRef<THREE.Group | null>(null);
   const currentIndicatorRef = useRef<THREE.Mesh | null>(null);
+  const trajectoryGroupRef = useRef<THREE.Group | null>(null);
+  const currentRotationRef = useRef<number>(0);
+  const targetRotationRef = useRef<number>(0);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -30,6 +42,11 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     const scene = new THREE.Scene();
     scene.background = null; // Ensure transparent background
     sceneRef.current = scene;
+
+    // Create rotation group for sun trajectory (for north alignment)
+    const trajectoryGroup = new THREE.Group();
+    trajectoryGroupRef.current = trajectoryGroup;
+    scene.add(trajectoryGroup);
 
     // Camera with wide FOV to match device camera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -87,8 +104,8 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
       });
       const arcLine = new THREE.Line(geometry, material);
       arcLineRef.current = arcLine;
-      scene.add(arcLine);
-      scene.add(markerGroup);
+      trajectoryGroup.add(arcLine);
+      trajectoryGroup.add(markerGroup);
 
       // Add current sun position indicator
       if (trajectory.currentPosition) {
@@ -104,7 +121,7 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
         const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
         indicator.position.copy(currentPoint);
         currentIndicatorRef.current = indicator;
-        scene.add(indicator);
+        trajectoryGroup.add(indicator);
       }
     };
 
@@ -127,6 +144,20 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
 
         // Use quaternion-based rotation (official Three.js pattern)
         setObjectQuaternion(camera.quaternion, alpha, beta, gamma, orient, THREE);
+      }
+
+      // Smooth interpolation for trajectory rotation (north alignment)
+      if (trajectoryGroupRef.current) {
+        const current = currentRotationRef.current;
+        const target = targetRotationRef.current;
+        if (Math.abs(current - target) > 0.001) {
+          // Smooth interpolation (easing)
+          currentRotationRef.current += (target - current) * 0.1;
+          trajectoryGroupRef.current.rotation.y = currentRotationRef.current;
+        } else {
+          trajectoryGroupRef.current.rotation.y = target;
+          currentRotationRef.current = target;
+        }
       }
 
       renderer.render(scene, camera);
@@ -173,6 +204,17 @@ export default function ARScene({ orientation, trajectory, width, height }: ARSc
     // Use quaternion-based rotation (official Three.js pattern)
     setObjectQuaternion(cameraRef.current.quaternion, alpha, beta, gamma, orient, THREE);
   }, [orientation]);
+
+  // Update trajectory rotation based on initial alpha (north alignment)
+  useEffect(() => {
+    if (!trajectoryGroupRef.current || initialAlpha === null) return;
+
+    // Rotate scene by initial alpha to align with real-world north
+    // Since alpha is opposite of compass heading, we need to negate it
+    // Also, we rotate around Y-axis (up) to align north
+    const rotationOffset = (-initialAlpha * Math.PI) / 180;
+    targetRotationRef.current = rotationOffset;
+  }, [initialAlpha]);
 
   return (
     <canvas
