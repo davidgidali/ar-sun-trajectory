@@ -435,17 +435,17 @@ export default function ThirdPersonView({
     }
 
     // Create AR content
-    const { aboveHorizonArc, belowHorizonArc, markers, currentIndicator, horizonPlane, compass } = createARContent(
-      scene,
-      trajectory,
-      THREE
-    );
-    aboveHorizonArcRef.current = aboveHorizonArc;
-    belowHorizonArcRef.current = belowHorizonArc;
-    markersRef.current = markers;
-    currentIndicatorRef.current = currentIndicator;
-    horizonPlaneRef.current = horizonPlane;
-    compassRef.current = compass;
+      const { aboveHorizonArc, belowHorizonArc, markers, currentIndicator, horizonPlane, compass } = createARContent(
+        scene,
+        trajectory,
+        THREE
+      );
+      aboveHorizonArcRef.current = aboveHorizonArc;
+      belowHorizonArcRef.current = belowHorizonArc;
+      markersRef.current = markers;
+      currentIndicatorRef.current = currentIndicator;
+      horizonPlaneRef.current = horizonPlane;
+      compassRef.current = compass;
   }, [trajectory, sceneReady]);
 
   return (

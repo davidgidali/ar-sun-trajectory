@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import ARCamera from '@/components/ARCamera';
 import ARScene from '@/components/ARScene';
+import AROverlay from '@/components/AROverlay';
 import LocationInput from '@/components/LocationInput';
 import PermissionModal from '@/components/PermissionModal';
 import { getLocation, saveLocation, type Location } from '@/lib/location';
@@ -166,13 +167,16 @@ export default function Home() {
 
       {/* AR Overlay */}
       {dimensions.width > 0 && dimensions.height > 0 && (
-        <ARScene
-          orientation={orientation}
-          trajectory={trajectory}
-          width={dimensions.width}
-          height={dimensions.height}
-          fov={fov}
-        />
+        <>
+          <ARScene
+            orientation={orientation}
+            trajectory={trajectory}
+            width={dimensions.width}
+            height={dimensions.height}
+            fov={fov}
+          />
+          <AROverlay orientation={orientation} />
+        </>
       )}
 
       {/* Location Input Modal */}

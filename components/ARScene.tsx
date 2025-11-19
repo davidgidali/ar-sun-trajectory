@@ -26,6 +26,12 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
   const currentIndicatorRef = useRef<THREE.Mesh | null>(null);
   const horizonPlaneRef = useRef<THREE.Mesh | null>(null);
   const compassRef = useRef<THREE.Group | null>(null);
+  const orientationRef = useRef<DeviceOrientation | null>(orientation);
+
+  // Keep orientation ref in sync (used in animation loop)
+  useEffect(() => {
+    orientationRef.current = orientation;
+  }, [orientation]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -100,11 +106,12 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
       animationFrameId = requestAnimationFrame(animate);
 
       // Update camera rotation based on device orientation using quaternions
-      if (orientation && camera) {
+      const currentOrientation = orientationRef.current;
+      if (currentOrientation && camera) {
         // Convert degrees to radians
-        const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
-        const beta = orientation.beta !== null ? (orientation.beta * Math.PI) / 180 : 0;
-        const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
+        const alpha = currentOrientation.alpha !== null ? (currentOrientation.alpha * Math.PI) / 180 : 0;
+        const beta = currentOrientation.beta !== null ? (currentOrientation.beta * Math.PI) / 180 : 0;
+        const gamma = currentOrientation.gamma !== null ? (currentOrientation.gamma * Math.PI) / 180 : 0;
         const orient = (getScreenOrientation() * Math.PI) / 180;
 
         // Use quaternion-based rotation (official Three.js pattern)
@@ -161,7 +168,7 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
         });
       }
     };
-  }, [width, height, trajectory, orientation]);
+  }, [width, height, trajectory]);
 
   // Update camera FOV when it changes (without re-initializing scene)
   useEffect(() => {
