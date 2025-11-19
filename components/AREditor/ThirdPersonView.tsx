@@ -75,6 +75,7 @@ export default function ThirdPersonView({
   const orientationQuatRef = useRef<THREE.Quaternion>(
     deviceOrientationToQuaternion(orientation, THREE)
   );
+  const animationFrameIdRef = useRef<number | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
 
   const createAxisLabel = (text: string, color: string, position: THREE.Vector3) => {
@@ -219,12 +220,11 @@ export default function ThirdPersonView({
       deviceCamera.updateProjectionMatrix();
       fovHelper.update();
 
-      let animationFrameId: number;
       const animate = () => {
         if (cancelled) return;
         controls.update();
         renderer.render(scene, camera);
-        animationFrameId = requestAnimationFrame(animate);
+        animationFrameIdRef.current = requestAnimationFrame(animate);
       };
 
       animate();
@@ -235,6 +235,10 @@ export default function ThirdPersonView({
 
     return () => {
       cancelled = true;
+      if (animationFrameIdRef.current !== null) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
       if (controlsRef.current) {
         controlsRef.current.dispose();
       }
@@ -260,7 +264,18 @@ export default function ThirdPersonView({
       axisLabelTexturesRef.current = [];
       setSceneReady(false);
     };
-  }, [width, height, fov]);
+  }, [width, height]);
+
+  // Update deviceCamera FOV when it changes (without re-initializing scene)
+  useEffect(() => {
+    if (!deviceCameraRef.current) return;
+    const effectiveFOV = fov ?? 75;
+    if (deviceCameraRef.current.fov !== effectiveFOV) {
+      deviceCameraRef.current.fov = effectiveFOV;
+      deviceCameraRef.current.updateProjectionMatrix();
+      fovHelperRef.current?.update();
+    }
+  }, [fov]);
 
   // Update device orientation - consolidated single effect
   useEffect(() => {

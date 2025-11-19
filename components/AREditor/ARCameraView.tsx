@@ -50,16 +50,6 @@ export default function ARCameraView({ orientation, trajectory, width, height, f
     renderer.setSize(width, height);
     rendererRef.current = renderer;
 
-    if (trajectory) {
-      const { aboveHorizonArc, belowHorizonArc, markers, currentIndicator, horizonPlane, compass } = createARContent(scene, trajectory, THREE);
-      aboveHorizonArcRef.current = aboveHorizonArc;
-      belowHorizonArcRef.current = belowHorizonArc;
-      markersRef.current = markers;
-      currentIndicatorRef.current = currentIndicator;
-      horizonPlaneRef.current = horizonPlane;
-      compassRef.current = compass;
-    }
-
     let animationFrameId: number;
     const animate = () => {
       renderer.render(scene, camera);
@@ -119,7 +109,17 @@ export default function ARCameraView({ orientation, trajectory, width, height, f
       cameraRef.current = null;
       rendererRef.current = null;
     };
-  }, [height, trajectory, width, fov]);
+  }, [height, width]);
+
+  // Update camera FOV when it changes (without re-initializing scene)
+  useEffect(() => {
+    if (!cameraRef.current) return;
+    const effectiveFOV = fov ?? 75;
+    if (cameraRef.current.fov !== effectiveFOV) {
+      cameraRef.current.fov = effectiveFOV;
+      cameraRef.current.updateProjectionMatrix();
+    }
+  }, [fov]);
 
   useEffect(() => {
     if (!sceneRef.current || !trajectory) return;

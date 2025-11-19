@@ -6,6 +6,9 @@ const FOV_STORAGE_KEY = 'ar-camera-fov';
 const DEVICE_FOV_MAP: Record<string, number> = {
   // iPhone SE (2020/2022) - uses iPhone 8 camera module
   'iphone se': 65,
+  'iphone se (2nd generation)': 65,
+  'iphone se 2020': 65,
+  'iphone se 2022': 65,
   // iPhone 11 Pro - wide camera
   'iphone 11 pro': 77,
   'iphone 11 pro max': 77,
@@ -36,10 +39,33 @@ const DEFAULT_FOV = 75;
 /**
  * Detect device camera FOV using multiple fallback strategies
  * Returns FOV and device info
+ * Reordered to avoid camera stream request when possible
  */
 function detectCameraFOV(): Promise<{ fov: number; device: string }> {
   return new Promise((resolve) => {
-    // Strategy 1: Try to get FOV from MediaStreamTrack settings
+    // Strategy 1: Check localStorage for cached value (fastest, no camera needed)
+    const cachedFOV = localStorage.getItem(FOV_STORAGE_KEY);
+    if (cachedFOV) {
+      const fov = parseFloat(cachedFOV);
+      if (!isNaN(fov) && fov > 0 && fov < 180) {
+        resolve({ fov, device: 'Cached value' });
+        return;
+      }
+    }
+    
+    // Strategy 2: Device detection via User-Agent (no camera needed)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const detected = detectFOVFromUserAgent(userAgent);
+    
+    if (detected.fov !== DEFAULT_FOV) {
+      // Cache detected FOV
+      localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
+      resolve(detected);
+      return;
+    }
+    
+    // Strategy 3: Try to get FOV from MediaStreamTrack settings (only as last resort)
+    // This requires camera access which may conflict with ARCamera component
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: 'environment' } })
       .then((stream) => {
@@ -60,50 +86,11 @@ function detectCameraFOV(): Promise<{ fov: number; device: string }> {
           track.stop();
         }
         
-        // Strategy 2: Device detection via User-Agent
-        const userAgent = navigator.userAgent.toLowerCase();
-        const detected = detectFOVFromUserAgent(userAgent);
-        
-        if (detected.fov !== DEFAULT_FOV) {
-          // Cache detected FOV
-          localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
-          resolve(detected);
-          return;
-        }
-        
-        // Strategy 3: Check localStorage for cached value
-        const cachedFOV = localStorage.getItem(FOV_STORAGE_KEY);
-        if (cachedFOV) {
-          const fov = parseFloat(cachedFOV);
-          if (!isNaN(fov) && fov > 0 && fov < 180) {
-            resolve({ fov, device: 'Cached value' });
-            return;
-          }
-        }
-        
-        // Strategy 4: Default fallback
+        // If camera doesn't provide FOV, use default
         resolve({ fov: DEFAULT_FOV, device: 'Default (75°)' });
       })
       .catch(() => {
-        // If camera access fails, try device detection and localStorage
-        const userAgent = navigator.userAgent.toLowerCase();
-        const detected = detectFOVFromUserAgent(userAgent);
-        
-        if (detected.fov !== DEFAULT_FOV) {
-          localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
-          resolve(detected);
-          return;
-        }
-        
-        const cachedFOV = localStorage.getItem(FOV_STORAGE_KEY);
-        if (cachedFOV) {
-          const fov = parseFloat(cachedFOV);
-          if (!isNaN(fov) && fov > 0 && fov < 180) {
-            resolve({ fov, device: 'Cached value' });
-            return;
-          }
-        }
-        
+        // If camera access fails, use default
         resolve({ fov: DEFAULT_FOV, device: 'Default (75°)' });
       });
   });

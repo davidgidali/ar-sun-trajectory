@@ -95,8 +95,9 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
     }
 
     // Animation loop
+    let animationFrameId: number;
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
 
       // Update camera rotation based on device orientation using quaternions
       if (orientation && camera) {
@@ -117,6 +118,7 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
 
     // Cleanup
     return () => {
+      cancelAnimationFrame(animationFrameId);
       if (renderer) {
         renderer.dispose();
       }
@@ -159,21 +161,17 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
         });
       }
     };
-  }, [width, height, trajectory, orientation, fov]);
+  }, [width, height, trajectory, orientation]);
 
-  // Update camera rotation when orientation changes
+  // Update camera FOV when it changes (without re-initializing scene)
   useEffect(() => {
-    if (!cameraRef.current || !orientation) return;
-
-    // Convert degrees to radians
-    const alpha = orientation.alpha !== null ? (orientation.alpha * Math.PI) / 180 : 0;
-    const beta = orientation.beta !== null ? (orientation.beta * Math.PI) / 180 : 0;
-    const gamma = orientation.gamma !== null ? (orientation.gamma * Math.PI) / 180 : 0;
-    const orient = (getScreenOrientation() * Math.PI) / 180;
-
-    // Use quaternion-based rotation (official Three.js pattern)
-    setObjectQuaternion(cameraRef.current.quaternion, alpha, beta, gamma, orient, THREE);
-  }, [orientation]);
+    if (!cameraRef.current) return;
+    const effectiveFOV = fov ?? 75;
+    if (cameraRef.current.fov !== effectiveFOV) {
+      cameraRef.current.fov = effectiveFOV;
+      cameraRef.current.updateProjectionMatrix();
+    }
+  }, [fov]);
 
   return (
     <canvas
