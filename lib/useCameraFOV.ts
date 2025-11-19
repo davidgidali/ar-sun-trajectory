@@ -53,16 +53,21 @@ function detectCameraFOV(): Promise<{ fov: number; device: string }> {
       }
     }
     
-    // Strategy 2: Device detection via User-Agent (no camera needed)
+    // Strategy 2: Device detection via User-Agent and screen dimensions (no camera needed)
     const userAgent = navigator.userAgent.toLowerCase();
+    console.log('FOV Detection: User-Agent:', userAgent);
+    console.log('FOV Detection: Screen dimensions:', window.screen.width, 'x', window.screen.height);
     const detected = detectFOVFromUserAgent(userAgent);
     
     if (detected.fov !== DEFAULT_FOV) {
       // Cache detected FOV
       localStorage.setItem(FOV_STORAGE_KEY, detected.fov.toString());
+      console.log('FOV Detection: Using detected FOV:', detected.fov, 'from device:', detected.device);
       resolve(detected);
       return;
     }
+    
+    console.log('FOV Detection: Could not detect device, using default FOV: 75');
     
     // Strategy 3: Try to get FOV from MediaStreamTrack settings (only as last resort)
     // This requires camera access which may conflict with ARCamera component
@@ -97,15 +102,55 @@ function detectCameraFOV(): Promise<{ fov: number; device: string }> {
 }
 
 /**
- * Detect FOV from User-Agent string
+ * Detect FOV from User-Agent string and device characteristics
  * Returns FOV and device name
+ * 
+ * Note: iOS Safari User-Agent doesn't include device model, so we use
+ * screen dimensions and other heuristics as fallback
  */
 function detectFOVFromUserAgent(userAgent: string): { fov: number; device: string } {
-  // Check for iPhone models
+  // Check for iPhone models in User-Agent (rarely works on iOS Safari)
   for (const [device, fov] of Object.entries(DEVICE_FOV_MAP)) {
     if (userAgent.includes(device)) {
-      return { fov, device: device.replace('iphone ', 'iPhone ').replace(/\b\w/g, l => l.toUpperCase()) };
+      const deviceName = device.replace('iphone ', 'iPhone ').replace(/\b\w/g, l => l.toUpperCase());
+      console.log('FOV Detection: Matched device from User-Agent:', deviceName, 'FOV:', fov);
+      return { fov, device: deviceName };
     }
+  }
+  
+  // iOS Safari User-Agent doesn't include model, so use screen dimensions as heuristic
+  if (typeof window !== 'undefined' && userAgent.includes('iphone')) {
+    const width = window.screen.width;
+    const height = window.screen.height;
+    const minDim = Math.min(width, height);
+    const maxDim = Math.max(width, height);
+    
+    // iPhone SE (2020/2022) has 750x1334 or 828x1792 resolution
+    // iPhone 12 Pro has 1170x2532 resolution
+    // Use resolution as heuristic
+    if (minDim === 750 && maxDim === 1334) {
+      // iPhone SE (1st gen) or SE (2nd gen) in portrait
+      console.log('FOV Detection: Detected iPhone SE from screen dimensions (750x1334), FOV: 65');
+      return { fov: 65, device: 'iPhone SE (detected from screen)' };
+    }
+    if (minDim === 828 && maxDim === 1792) {
+      // iPhone SE (2nd gen) or iPhone 11/XR in portrait
+      // SE 2nd gen is more likely if it's a smaller device
+      console.log('FOV Detection: Detected iPhone SE/11 from screen dimensions (828x1792), assuming SE, FOV: 65');
+      return { fov: 65, device: 'iPhone SE (detected from screen)' };
+    }
+    if (minDim === 1170 && maxDim === 2532) {
+      // iPhone 12/12 Pro/13/13 Pro in portrait
+      console.log('FOV Detection: Detected iPhone 12/13 Pro from screen dimensions (1170x2532), FOV: 77');
+      return { fov: 77, device: 'iPhone 12/13 Pro (detected from screen)' };
+    }
+    if (minDim === 1284 && maxDim === 2778) {
+      // iPhone 12 Pro Max/13 Pro Max/14 Pro Max in portrait
+      console.log('FOV Detection: Detected iPhone Pro Max from screen dimensions (1284x2778), FOV: 77');
+      return { fov: 77, device: 'iPhone Pro Max (detected from screen)' };
+    }
+    
+    console.log('FOV Detection: iPhone detected but unknown model, screen:', width, 'x', height, 'using default FOV: 75');
   }
   
   return { fov: DEFAULT_FOV, device: 'Unknown' };
