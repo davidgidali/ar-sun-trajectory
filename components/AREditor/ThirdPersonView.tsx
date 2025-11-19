@@ -36,6 +36,7 @@ function quaternionToDeviceOrientation(quaternion: THREE.Quaternion): DeviceOrie
     alpha: THREE.MathUtils.radToDeg(euler.y),
     beta: THREE.MathUtils.radToDeg(euler.x),
     gamma: -THREE.MathUtils.radToDeg(euler.z),
+    absolute: false, // Simulated orientation
   };
 }
 
@@ -341,7 +342,7 @@ export default function ThirdPersonView({
           applyRotation(AXIS_Y, -FINE_STEP);
           break;
         case 'Space':
-          quat.copy(deviceOrientationToQuaternion({ alpha: 180, beta: 90, gamma: 0 }, THREE));
+          quat.copy(deviceOrientationToQuaternion({ alpha: 180, beta: 90, gamma: 0, absolute: false }, THREE));
           break;
         default:
           return;

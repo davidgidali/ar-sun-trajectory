@@ -2,6 +2,7 @@ export interface DeviceOrientation {
   alpha: number | null; // Z-axis rotation (yaw) 0-360
   beta: number | null; // X-axis rotation (pitch) -180 to 180
   gamma: number | null; // Y-axis rotation (roll) -90 to 90
+  absolute: boolean; // true if orientation is relative to Earth's coordinate frame
 }
 
 export interface OrientationState {
@@ -80,6 +81,7 @@ export function createOrientationListener(
         alpha: event.alpha ?? null,
         beta: event.beta ?? null,
         gamma: event.gamma ?? null,
+        absolute: event.absolute ?? false,
       };
       onOrientation(orientation);
     };

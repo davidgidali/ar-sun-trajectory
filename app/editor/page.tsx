@@ -22,6 +22,7 @@ export default function EditorPage() {
     alpha: 180, // Camera facing North (back camera points to +Z)
     beta: 90, // Device held upright
     gamma: 0, // No roll
+    absolute: false, // Simulated orientation is relative
   });
   const thirdPersonViewport = useContainerSize({ width: 800, height: 600 });
   const cameraViewport = useContainerSize({ width: 400, height: 600 });

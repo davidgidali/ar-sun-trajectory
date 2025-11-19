@@ -4,7 +4,7 @@ import type { DeviceOrientation } from '@/lib/orientation';
 
 interface AROverlayProps {
   orientation: DeviceOrientation | null;
-  initialAlpha?: number | null;
+  initialAlpha: number | null;
 }
 
 export default function AROverlay({ orientation, initialAlpha }: AROverlayProps) {
@@ -17,7 +17,7 @@ export default function AROverlay({ orientation, initialAlpha }: AROverlayProps)
   const pitch = beta !== null ? (beta - 90).toFixed(1) : '--';
   const pitchValue = beta !== null ? beta - 90 : 0;
 
-  // Calculate compass heading with north offset applied
+  // Calculate compass heading with offset (0-360°)
   const compass = alpha !== null && initialAlpha !== null
     ? (((alpha - initialAlpha) + 360) % 360).toFixed(0)
     : (alpha?.toFixed(0) ?? '--');

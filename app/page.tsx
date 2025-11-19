@@ -80,7 +80,9 @@ export default function Home() {
       (orient) => {
         // Capture first alpha value once
         if (initialAlphaRef.current === null && orient.alpha !== null) {
-          initialAlphaRef.current = orient.alpha;
+          // If absolute orientation (true north), use 0 as offset
+          // If relative orientation, use current alpha as offset
+          initialAlphaRef.current = orient.absolute ? 0 : orient.alpha;
         }
         setOrientation(orient);
       },
@@ -173,14 +175,14 @@ export default function Home() {
       {/* AR Overlay */}
       {dimensions.width > 0 && dimensions.height > 0 && (
         <>
-          <ARScene
-            orientation={orientation}
-            trajectory={trajectory}
-            width={dimensions.width}
-            height={dimensions.height}
+        <ARScene
+          orientation={orientation}
+          trajectory={trajectory}
+          width={dimensions.width}
+          height={dimensions.height}
             fov={fov}
             northOffset={initialAlphaRef.current ?? 0}
-          />
+        />
           <AROverlay orientation={orientation} initialAlpha={initialAlphaRef.current} />
         </>
       )}
