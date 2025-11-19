@@ -47,13 +47,13 @@ function detectCameraFOV(): Promise<{ fov: number; device: string }> {
         if (track) {
           const settings = track.getSettings();
           
-          // Check if FOV is directly available in settings
-          if (settings.fov && typeof settings.fov === 'number') {
+          // Check if FOV is directly available in settings (not in standard types, but may be available)
+          const fovValue = (settings as any).fov;
+          if (fovValue && typeof fovValue === 'number') {
             track.stop();
-            const fov = settings.fov;
             // Cache it
-            localStorage.setItem(FOV_STORAGE_KEY, fov.toString());
-            resolve({ fov, device: 'Detected from camera settings' });
+            localStorage.setItem(FOV_STORAGE_KEY, fovValue.toString());
+            resolve({ fov: fovValue, device: 'Detected from camera settings' });
             return;
           }
           
