@@ -13,9 +13,10 @@ interface ARSceneProps {
   width: number;
   height: number;
   fov?: number;
+  northOffset?: number;
 }
 
-export default function ARScene({ orientation, trajectory, width, height, fov }: ARSceneProps) {
+export default function ARScene({ orientation, trajectory, width, height, fov, northOffset }: ARSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -108,8 +109,12 @@ export default function ARScene({ orientation, trajectory, width, height, fov }:
       // Update camera rotation based on device orientation using quaternions
       const currentOrientation = orientationRef.current;
       if (currentOrientation && camera) {
+        // Apply north offset to align scene north with device north
+        const rawAlpha = currentOrientation.alpha !== null ? currentOrientation.alpha : 0;
+        const adjustedAlpha = ((rawAlpha - (northOffset ?? 0)) + 360) % 360;
+        
         // Convert degrees to radians
-        const alpha = currentOrientation.alpha !== null ? (currentOrientation.alpha * Math.PI) / 180 : 0;
+        const alpha = (adjustedAlpha * Math.PI) / 180;
         const beta = currentOrientation.beta !== null ? (currentOrientation.beta * Math.PI) / 180 : 0;
         const gamma = currentOrientation.gamma !== null ? (currentOrientation.gamma * Math.PI) / 180 : 0;
         const orient = (getScreenOrientation() * Math.PI) / 180;

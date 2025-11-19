@@ -28,6 +28,7 @@ export default function Home() {
   const orientationListenerRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(
     null
   );
+  const initialAlphaRef = useRef<number | null>(null);
   const { fov, deviceInfo, isLoading: fovLoading } = useCameraFOV();
 
   // Get screen dimensions
@@ -77,6 +78,10 @@ export default function Home() {
 
     const listener = createOrientationListener(
       (orient) => {
+        // Capture first alpha value once
+        if (initialAlphaRef.current === null && orient.alpha !== null) {
+          initialAlphaRef.current = orient.alpha;
+        }
         setOrientation(orient);
       },
       (error) => {
@@ -174,6 +179,7 @@ export default function Home() {
             width={dimensions.width}
             height={dimensions.height}
             fov={fov}
+            northOffset={initialAlphaRef.current ?? 0}
           />
           <AROverlay orientation={orientation} />
         </>
