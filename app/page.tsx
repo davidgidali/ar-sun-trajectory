@@ -181,7 +181,7 @@ export default function Home() {
             fov={fov}
             northOffset={initialAlphaRef.current ?? 0}
           />
-          <AROverlay orientation={orientation} />
+          <AROverlay orientation={orientation} initialAlpha={initialAlphaRef.current} />
         </>
       )}
 
