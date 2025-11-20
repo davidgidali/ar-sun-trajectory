@@ -8,12 +8,13 @@ import AROverlay from '@/components/AROverlay';
 import LocationInput from '@/components/LocationInput';
 import PermissionModal from '@/components/PermissionModal';
 import { getLocation, saveLocation, type Location } from '@/lib/location';
-import { calculateSunTrajectory, type SunTrajectory } from '@/lib/sunTrajectory';
 import {
+  calculateSunTrajectory,
+  type SunTrajectory,
   createOrientationListener,
   type DeviceOrientation,
   isDeviceOrientationSupported,
-} from '@/lib/orientation';
+} from '@starmap/ar-core';
 import { useCameraFOV } from '@/lib/useCameraFOV';
 
 export default function Home() {
