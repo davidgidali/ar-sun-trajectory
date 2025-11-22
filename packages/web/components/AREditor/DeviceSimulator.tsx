@@ -15,6 +15,7 @@ const defaultOrientation: DeviceOrientation = {
   alpha: 180,
   beta: 90,
   gamma: 0,
+  absolute: false,
 };
 
 export default function DeviceSimulator({
