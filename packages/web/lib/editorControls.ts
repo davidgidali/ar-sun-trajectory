@@ -41,14 +41,14 @@ export function applyOrientationDelta(
 ): DeviceOrientation {
   // Space resets orientation
   if (delta.alpha === 0 && delta.beta === 0 && delta.gamma === 0) {
-    return { alpha: 0, beta: 0, gamma: 0 };
+    return { alpha: 0, beta: 0, gamma: 0, absolute: orientation.absolute };
   }
 
   const alpha = wrapAlpha((orientation.alpha ?? 0) + (delta.alpha ?? 0));
   const beta = clampBeta((orientation.beta ?? 0) + (delta.beta ?? 0));
   const gamma = clampGamma((orientation.gamma ?? 0) + (delta.gamma ?? 0));
 
-  return { alpha, beta, gamma };
+  return { alpha, beta, gamma, absolute: orientation.absolute };
 }
 
 
