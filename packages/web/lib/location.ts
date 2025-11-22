@@ -1,7 +1,5 @@
-export interface Location {
-  latitude: number;
-  longitude: number;
-}
+import type { Location } from '@starmap/ar-core';
+export type { Location };
 
 const LOCATION_STORAGE_KEY = 'ar-sun-location';
 

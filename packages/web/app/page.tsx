@@ -11,10 +11,12 @@ import { getLocation, saveLocation, type Location } from '@/lib/location';
 import {
   calculateSunTrajectory,
   type SunTrajectory,
+} from '@starmap/ar-core';
+import {
   createOrientationListener,
   type DeviceOrientation,
   isDeviceOrientationSupported,
-} from '@starmap/ar-core';
+} from '@/lib/orientation';
 import { useCameraFOV } from '@/lib/useCameraFOV';
 
 export default function Home() {

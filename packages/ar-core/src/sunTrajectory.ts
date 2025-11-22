@@ -1,6 +1,6 @@
 // @ts-ignore - suncalc doesn't have TypeScript definitions
 import * as SunCalc from 'suncalc';
-import type { Location } from './location';
+import type { Location } from './types';
 
 export interface SunPosition {
   azimuth: number; // 0-360 degrees, 0 = North, 90 = East, 180 = South, 270 = West
